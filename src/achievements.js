@@ -230,20 +230,24 @@ export async function showAchievementsPanel() {
             if (!byCategory[a.category]) byCategory[a.category] = [];
             byCategory[a.category].push(a);
         });
-        
+
+        // Evitar divisão por zero
+        const progressPct = totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0;
+        const progressBarWidth = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
+
         overlay.innerHTML = `
             <div class="overlay">
                 <div class="achievements-container">
                     <div class="achievements-header">
-                        <div class="overlay-title">CONQUISTAS</div>
+                        <div class="overlay-title">🏆 CONQUISTAS</div>
                         <div class="achievements-progress">
                             <div class="achievements-progress-bar">
-                                <div class="achievements-progress-fill" style="width: ${(unlockedCount / totalCount) * 100}%"></div>
+                                <div class="achievements-progress-fill" style="width: ${progressBarWidth}%"></div>
                             </div>
-                            <span class="achievements-progress-text">${unlockedCount} / ${totalCount} (${Math.round((unlockedCount / totalCount) * 100)}%)</span>
+                            <span class="achievements-progress-text">${unlockedCount} / ${totalCount} (${progressPct}%)</span>
                         </div>
                     </div>
-                    
+
                     <div class="achievements-rarity-stats">
                         ${Object.entries(ACHIEVEMENT_RARITIES).map(([key, rarity]) => {
                             const total = achievements.filter(a => a.rarity === key).length;
@@ -257,13 +261,15 @@ export async function showAchievementsPanel() {
                             `;
                         }).join('')}
                     </div>
-                    
+
                     <div class="achievements-categories">
                         ${Object.entries(ACHIEVEMENT_CATEGORIES).map(([cat, label]) => {
                             if (!byCategory[cat]) return '';
+                            const catUnlocked = byCategory[cat].filter(a => a.unlocked).length;
+                            const catTotal = byCategory[cat].length;
                             return `
                                 <div class="achievement-category">
-                                    <div class="category-title">${label}</div>
+                                    <div class="category-title">${label} <span style="color:var(--text-muted);font-size:9px;">(${catUnlocked}/${catTotal})</span></div>
                                     <div class="achievement-grid">
                                         ${byCategory[cat].map(a => `
                                             <div class="achievement-card ${a.unlocked ? 'unlocked' : 'locked'} ${a.rarity}">
@@ -293,7 +299,7 @@ export async function showAchievementsPanel() {
                             `;
                         }).join('')}
                     </div>
-                    
+
                     <div class="achievements-actions">
                         <button class="btn" id="achievementsCloseBtn">Fechar</button>
                     </div>

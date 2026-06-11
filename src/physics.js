@@ -1,6 +1,6 @@
 // physics.js — Atualização da física (paddle, bolas, lasers, powerups, colisões, nível)
 
-import { state, paddle, scoreDisplay, levelDisplay, comboDisplay, startOverlay, H } from './state.js';
+import { state, paddle, scoreDisplay, coinsDisplay, levelDisplay, comboDisplay, startOverlay, H } from './state.js';
 import { input } from './input.js';
 import { 
     playSound, stopMusic, startMusic, playStartMusic, stopStartMusic, 
@@ -156,8 +156,11 @@ function checkLevelClear() {
                 playLevelUp();
             }
             
-            // Adicionar XP por completar nível
+            // Adicionar XP e coins por completar nível
             const levelXP = state.level * 10;
+            const levelCoins = Math.floor(state.level * 2); // 2 coins por nível
+            state.coins += levelCoins;
+            if (coinsDisplay) coinsDisplay.textContent = state.coins.toLocaleString();
             addXP(levelXP, 'level_complete');
             
             generateBricks();
@@ -340,6 +343,7 @@ export function startGame() {
     state.lastComboTier = 0;
     resetJuiceState();
     scoreDisplay.textContent = '0';
+    if (coinsDisplay) coinsDisplay.textContent = state.coins.toLocaleString();
     levelDisplay.textContent = '1';
     comboDisplay.textContent = 'x1';
     comboDisplay.style.color = '';
@@ -1003,12 +1007,15 @@ function onBrickDestroyed(brick) {
         spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, '#44ff88', 15);
     }
 
-    // Coin: pontos extras
+    // Coin: pontos extras + ganha coins
     if (brick.brickType === 'coin') {
         const coinPoints = 100;
+        const coinReward = 5; // Ganha 5 coins por tijolo coin
         state.score += coinPoints;
+        state.coins += coinReward;
         scoreDisplay.textContent = state.score;
-        addPopup('+' + coinPoints, brick.x + brick.w / 2, brick.y, '#ffcc00', 1.0);
+        coinsDisplay.textContent = state.coins.toLocaleString();
+        addPopup('+' + coinPoints + ' 💰+' + coinReward, brick.x + brick.w / 2, brick.y, '#ffcc00', 1.0);
         spawnParticles(brick.x + brick.w / 2, brick.y + brick.h / 2, '#ffcc00', 15);
     }
 

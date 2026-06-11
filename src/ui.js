@@ -322,6 +322,13 @@ export function updateUserIndicator() {
     el.className = 'user-name' + (isLoggedIn() ? ' logged-in' : '');
 }
 
+// ===== COINS DISPLAY =====
+export function updateCoinsDisplay() {
+    const el = document.getElementById('coinsDisplay');
+    if (!el) return;
+    el.textContent = state.coins.toLocaleString();
+}
+
 // ===== AUTH OVERLAY =====
 let authMode = 'login';
 
@@ -408,32 +415,55 @@ export function updateStartOverlay() {
     loadRanking();
 }
 
-// ===== RANKING =====
-export async function loadRanking() {
-    const section = document.getElementById('rankingSection');
-    const list = document.getElementById('rankingList');
-    const loading = document.getElementById('rankingLoading');
-    if (!section) return;
+// ===== RANKING OVERLAY =====
+export async function showRankingOverlay() {
+    const overlay = document.getElementById('rankingOverlay');
+    const list = document.getElementById('rankingOverlayList');
+    const loading = document.getElementById('rankingOverlayLoading');
+    if (!overlay) return;
 
-    section.style.display = 'block';
-    loading.textContent = 'A carregar...';
+    overlay.classList.remove('hidden');
+    if (loading) loading.style.display = 'block';
+    if (list) list.innerHTML = '';
 
     const result = await apiGetRanking();
     if (!result || !result.ranking || result.ranking.length === 0) {
-        loading.textContent = 'Nenhum ranking disponivel';
-        list.innerHTML = '';
+        if (loading) loading.textContent = 'Nenhum ranking disponivel';
         return;
     }
 
-    loading.style.display = 'none';
-    list.innerHTML = result.ranking.map(r =>
-        `<li class="highscore-entry">
-            <span class="hs-rank">${r.rank}.</span>
-            <span style="color:var(--accent2);font-size:8px;">${r.username}</span>
-            <span class="hs-score">${r.score}</span>
-            <span class="hs-level">Nv ${r.level}</span>
-        </li>`
-    ).join('');
+    if (loading) loading.style.display = 'none';
+    const currentUser = getUsername();
+    const medals = ['🥇','🥈','🥉'];
+
+    if (list) {
+        list.innerHTML = result.ranking.map((r, idx) => {
+            const rankNum = r.rank || (idx + 1);
+            const isTop3 = rankNum <= 3;
+            const isMe = currentUser && r.username === currentUser;
+            const rankDisplay = isTop3 ? medals[rankNum - 1] : `<span class="hs-rank-num">${rankNum}</span>`;
+            const meClass = isMe ? ' ranking-me' : '';
+            const topClass = isTop3 ? ` ranking-top-${rankNum}` : '';
+            return `<li class="highscore-entry${meClass}${topClass}">
+                <span class="hs-rank">${rankDisplay}</span>
+                <span class="hs-name">${r.username}</span>
+                <span class="hs-score">${r.score.toLocaleString()}</span>
+                <span class="hs-level">Nv ${r.level}</span>
+            </li>`;
+        }).join('');
+    }
+}
+
+export function hideRankingOverlay() {
+    const overlay = document.getElementById('rankingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+// ===== RANKING (compatibilidade com inicio) =====
+export async function loadRanking() {
+    // Nao mostra mais ranking no inicio — agora e overlay separado
+    const section = document.getElementById('rankingSection');
+    if (section) section.style.display = 'none';
 }
 
 // ===== PROFILE OVERLAY =====

@@ -7,6 +7,7 @@ export const H = canvas.height;
 
 // UI refs
 export const scoreDisplay = document.getElementById('scoreDisplay');
+export const coinsDisplay = document.getElementById('coinsDisplay');
 export const levelDisplay = document.getElementById('levelDisplay');
 export const comboDisplay = document.getElementById('comboDisplay');
 export const livesDisplayEl = document.getElementById('livesDisplay');
@@ -47,6 +48,7 @@ export const state = {
     slowMoTimer: 0,
 
     // Novas propriedades de jogo
+    coins: 0,
     balls: [],
     powerups: [],
     lasers: [],
