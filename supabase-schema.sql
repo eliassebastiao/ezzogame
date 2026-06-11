@@ -139,7 +139,19 @@ CREATE TABLE IF NOT EXISTS game_sessions (
 );
 
 -- 11. Estatísticas diárias
-CREATE TABLE IF NOT EXISTS stats_daily (
+-- 11. Token de autenticacao (sessoes)
+CREATE TABLE IF NOT EXISTS auth_tokens (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) REFERENCES profiles(username) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP DEFAULT (NOW() + INTERVAL '30 days')
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_token ON auth_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_username ON auth_tokens(username);
+
+-- 12. Estatisticas diarias
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) REFERENCES profiles(username) ON DELETE CASCADE,
     date DATE DEFAULT CURRENT_DATE,

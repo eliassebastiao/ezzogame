@@ -71,6 +71,31 @@ function parseQuery(url) {
     return params;
 }
 
+function getBearerToken(req) {
+    const auth = req.headers['authorization'] || '';
+    const match = auth.match(/^Bearer\s+(.+)$/i);
+    return match ? match[1].trim() : null;
+}
+
+// ===== AUTH MIDDLEWARE =====
+async function requireAuth(req) {
+    const token = getBearerToken(req);
+    if (!token) return { authorized: false, error: 'Token nao fornecido' };
+    try {
+        const result = await pool.query(
+            'SELECT username FROM auth_tokens WHERE token = $1 AND expires_at > NOW()',
+            [token]
+        );
+        if (result.rows.length === 0) {
+            return { authorized: false, error: 'Token invalido ou expirado' };
+        }
+        return { authorized: true, username: result.rows[0].username };
+    } catch (err) {
+        console.error('  [Auth] Erro ao verificar token:', err.message);
+        return { authorized: false, error: 'Erro interno de autenticacao' };
+    }
+}
+
 // ===== API ROUTES =====
 
 // POST /api/register
@@ -101,9 +126,20 @@ async function handleRegister(req, res) {
             [username, password_hash]
         );
 
-        // Create initial save
+        // Persistir token de autenticacao
+        await pool.query(
+            'INSERT INTO auth_tokens (username, token, created_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL \'30 days\')',
+            [username, token]
+        );
+
+        // Create initial save + coins
         await pool.query(
             'INSERT INTO game_saves (username, level, score, lives) VALUES ($1, 1, 0, 7) ON CONFLICT (username) DO NOTHING',
+            [username]
+        );
+        // Dar coins iniciais (apenas se for novo user — nao sobrescrever)
+        await pool.query(
+            'UPDATE profiles SET coins = GREATEST(coins, 100) WHERE username = $1',
             [username]
         );
 
@@ -138,6 +174,13 @@ async function handleLogin(req, res) {
 
         const token = uuidv4();
         await pool.query('UPDATE profiles SET last_login = NOW() WHERE username = $1', [username]);
+
+        // Persistir token de autenticacao (revogar tokens anteriores)
+        await pool.query('DELETE FROM auth_tokens WHERE username = $1', [username]);
+        await pool.query(
+            'INSERT INTO auth_tokens (username, token, created_at, expires_at) VALUES ($1, $2, NOW(), NOW() + INTERVAL \'30 days\')',
+            [username, token]
+        );
 
         sendJson(res, 200, {
             success: true,
@@ -309,7 +352,7 @@ async function handleRanking(req, res) {
 }
 
 // ===== REQUEST ROUTER =====
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
     // CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -348,10 +391,23 @@ const server = http.createServer((req, res) => {
             return handleRanking(req, res);
         }
 
-        // /api/:resource/:username
+        // /api/:resource/:username (protegido)
         if (segments.length >= 3) {
             const resource = segments[1]; // save, load, profile, history, xp, session, stats
             const username = segments[2];
+
+            // Rotas que NAO precisam de auth: register, login, version
+            // Todas as outras precisam verificar token
+            if (resource !== 'register' && resource !== 'login' && resource !== 'version') {
+                const auth = await requireAuth(req);
+                if (!auth.authorized) {
+                    return sendJson(res, 401, { success: false, error: auth.error });
+                }
+                // Verificar se o token pertence ao username requisitado
+                if (auth.username !== username) {
+                    return sendJson(res, 403, { success: false, error: 'Token nao corresponde a este usuario' });
+                }
+            }
 
             if (resource === 'save' && req.method === 'PUT') {
                 return handleSave(req, res, username);
@@ -537,7 +593,7 @@ async function handleAddXP(req, res, username) {
 }
 
 async function handleLeaderboard(req, res) {
-    const { mode = 'xp', limit = 50 } = parseQuery(req);
+    const { mode = 'xp', limit = 50 } = parseQuery(req.url);
     const validModes = ['xp', 'level', 'best_score', 'total_games'];
     const orderBy = validModes.includes(mode) ? mode : 'xp';
     
@@ -765,7 +821,7 @@ async function handleGetAllAchievements(req, res) {
 // ===== SHOP API ENDPOINTS =====
 
 async function handleGetShop(req, res) {
-    const { type } = parseQuery(req);
+    const { type } = parseQuery(req.url);
     try {
         let query = 'SELECT * FROM shop_items WHERE is_active = TRUE';
         const params = [];

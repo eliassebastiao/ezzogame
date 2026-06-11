@@ -12,7 +12,90 @@ import { initAuth } from './auth.js';
 import { loadSavedGame, loadServerSave, hasSavedGame } from './save.js';
 import { showShop } from './shop.js';
 import { showAchievementsPanel } from './achievements.js';
+import { showRankingOverlay, hideRankingOverlay } from './ui.js';
 import { checkUpdateOnStartup } from './updateUI.js';
+
+// ===== SPLASH SCREEN =====
+function initSplashScreen() {
+    const splash = document.getElementById('splashScreen');
+    if (!splash) return;
+    // Esconder splash após ~2.5s
+    setTimeout(() => {
+        splash.classList.add('done');
+        setTimeout(() => {
+            splash.style.display = 'none';
+        }, 700);
+    }, 2500);
+}
+
+// ===== MOBILE CONTROLS =====
+function initMobileControls() {
+    const mobileControls = document.getElementById('mobileControls');
+    if (!mobileControls) return;
+
+    // Só mostrar quando o jogo estiver a jogar e em dispositivos touch
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isMobile = window.matchMedia('(max-width: 700px)').matches;
+    if (!isTouch && !isMobile) {
+        mobileControls.classList.add('desktop-hidden');
+        return;
+    }
+
+    const leftBtn = document.getElementById('mobileLeft');
+    const rightBtn = document.getElementById('mobileRight');
+    const launchBtn = document.getElementById('mobileLaunch');
+
+    function addTouch(btn, key) {
+        if (!btn) return;
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            input.keys[key] = true;
+        }, { passive: false });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            input.keys[key] = false;
+        }, { passive: false });
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            input.keys[key] = true;
+        });
+        btn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            input.keys[key] = false;
+        });
+        btn.addEventListener('mouseleave', (e) => {
+            input.keys[key] = false;
+        });
+    }
+
+    addTouch(leftBtn, 'ArrowLeft');
+    addTouch(rightBtn, 'ArrowRight');
+
+    if (launchBtn) {
+        launchBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (state.gameState === 'playing') launchBall();
+        }, { passive: false });
+        launchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (state.gameState === 'playing') launchBall();
+        });
+    }
+
+    // Mostrar/ocultar controles mobile conforme estado do jogo
+    function updateMobileControlsVisibility() {
+        const playing = state.gameState === 'playing' && !state.paused;
+        mobileControls.classList.toggle('active', playing);
+    }
+
+    // Checar a cada frame
+    const originalLoop = window.requestAnimationFrame;
+    function checkLoop() {
+        updateMobileControlsVisibility();
+        requestAnimationFrame(checkLoop);
+    }
+    checkLoop();
+}
 
 // Init session + UI
 (async () => {
@@ -31,6 +114,10 @@ import { checkUpdateOnStartup } from './updateUI.js';
 
     // Verificar actualizacao em background (nao bloqueia o jogo)
     checkUpdateOnStartup();
+
+    // Splash e mobile controls
+    initSplashScreen();
+    initMobileControls();
 })();
 
 // Init audio
@@ -153,7 +240,20 @@ sfxSlider.addEventListener('input', () => {
 // ===== SHOP BUTTON =====
 document.getElementById('shopBtn').addEventListener('click', showShop);
 
-// ===== START SCREEN SHOP & ACHIEVEMENTS =====
+// ===== START SCREEN SHOP & ACHIEVEMENTS & RANKING =====
 document.getElementById('startShopBtn').addEventListener('click', showShop);
 document.getElementById('startAchievementsBtn').addEventListener('click', showAchievementsPanel);
+document.getElementById('startRankingBtn').addEventListener('click', showRankingOverlay);
 document.getElementById('profileAchievementsBtn').addEventListener('click', showAchievementsPanel);
+
+// ===== RANKING OVERLAY CLOSE =====
+const rankingOverlay = document.getElementById('rankingOverlay');
+const rankingCloseBtn = document.getElementById('rankingCloseBtn');
+if (rankingCloseBtn) {
+    rankingCloseBtn.addEventListener('click', hideRankingOverlay);
+}
+if (rankingOverlay) {
+    rankingOverlay.addEventListener('click', (e) => {
+        if (e.target === rankingOverlay) hideRankingOverlay();
+    });
+}

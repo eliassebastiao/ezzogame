@@ -13,6 +13,7 @@ export function saveGame(keepHistory = true) {
     const saveData = {
         level: state.level,
         score: state.score,
+        coins: state.coins,
         lives: state.lives,
         reserveLife: state.reserveLife,
         maxCombo: state.stats.maxCombo,
@@ -41,6 +42,7 @@ export function loadSavedGame() {
 
     state.level = save.level || 1;
     state.score = save.score || 0;
+    state.coins = save.coins || 0;
     state.lives = save.lives || 7;
     state.reserveLife = save.reserveLife || 0;
     state.stats.maxCombo = save.maxCombo || 0;
@@ -60,6 +62,7 @@ export async function loadServerSave() {
     const saveData = {
         level: s.level || 1,
         score: s.score || 0,
+        coins: s.coins || 0,
         lives: s.lives || 7,
         reserveLife: s.reserveLife || 0,
         maxCombo: s.maxCombo || 0,

@@ -8,19 +8,42 @@ if (window.location.protocol === 'file:') {
     console.error('⚠️ ERRO: O jogo foi aberto diretamente do ficheiro. Usa o servidor: http://localhost:8081');
 }
 
+// ===== TOKEN HELPER =====
+function getAuthToken() {
+    // Primeiro tenta do state (se ja carregou sessaoo)
+    if (state && state.user && state.user.authToken) {
+        return state.user.authToken;
+    }
+    // Fallback para localStorage
+    try {
+        const raw = localStorage.getItem(STORAGE_KEYS.AUTH);
+        if (raw) {
+            const auth = JSON.parse(raw);
+            return auth.authToken || null;
+        }
+    } catch {}
+    return null;
+}
+
 // ===== API FETCH WRAPPER =====
 async function apiFetch(path, options = {}) {
     const url = `${BASE}/api${path}`;
     try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 5000);
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+        };
+        // Adicionar token de autenticacao automaticamente
+        const token = getAuthToken();
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
         const res = await fetch(url, {
             ...options,
             signal: controller.signal,
-            headers: {
-                'Content-Type': 'application/json',
-                ...(options.headers || {}),
-            },
+            headers,
         });
         clearTimeout(timeout);
         state.serverReachable = true;
