@@ -1982,6 +1982,41 @@
             padding: 40px;
         }
 
+        /* ===== SETTINGS VERSION SECTION ===== */
+        .settings-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 12px 0;
+        }
+        .settings-version {
+            padding: 4px 0;
+        }
+        .settings-version-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+        }
+        .settings-update-status {
+            font-size: 8px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 6px;
+            min-height: 14px;
+        }
+        .settings-update-status.checking {
+            color: var(--accent2);
+        }
+        .settings-update-status.available {
+            color: var(--accent);
+        }
+        .settings-update-status.latest {
+            color: #4ade80;
+        }
+        .settings-update-status.error {
+            color: #f87171;
+        }
+
         /* ===== UPDATE OVERLAY ===== */
         .update-toast {
             position: fixed;
@@ -2900,6 +2935,17 @@
                 <span class="settings-label">Efeitos</span>
                 <input type="range" class="settings-slider" id="sfxVolumeSlider" min="0" max="100" value="80">
                 <span class="settings-value" id="sfxVolumeValue">80%</span>
+            </div>
+            <div class="settings-divider"></div>
+            <div class="settings-version" id="settingsVersionInfo">
+                <div class="settings-version-row">
+                    <span class="settings-label">Versão</span>
+                    <span class="settings-value" id="currentVersionLabel">2.0.0</span>
+                </div>
+                <button class="btn btn-small" id="checkUpdateBtn" style="width:100%;margin-top:8px;font-size:8px;">
+                    VERIFICAR ACTUALIZACOES
+                </button>
+                <div class="settings-update-status" id="updateStatusText"></div>
             </div>
             <button class="settings-close" id="settingsCloseBtn">FECHAR</button>
         </div>

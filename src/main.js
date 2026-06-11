@@ -14,6 +14,7 @@ import { showShop } from './shop.js';
 import { showAchievementsPanel } from './achievements.js';
 import { showRankingOverlay, hideRankingOverlay } from './ui.js';
 import { checkUpdateOnStartup } from './updateUI.js';
+import { checkForUpdate } from './update.js';
 
 // ===== SPLASH SCREEN =====
 function initSplashScreen() {
@@ -192,6 +193,9 @@ const musicSlider = document.getElementById('musicVolumeSlider');
 const sfxSlider = document.getElementById('sfxVolumeSlider');
 const musicValue = document.getElementById('musicVolumeValue');
 const sfxValue = document.getElementById('sfxVolumeValue');
+const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+const updateStatusText = document.getElementById('updateStatusText');
+const currentVersionLabel = document.getElementById('currentVersionLabel');
 
 // Init sliders from saved settings
 musicSlider.value = Math.round(settings.musicVolume * 100);
@@ -212,6 +216,37 @@ settingsOverlay.addEventListener('click', (e) => {
     if (e.target === settingsOverlay) {
         settingsOverlay.classList.add('hidden');
     }
+});
+
+// ===== VERSION CHECK IN SETTINGS =====
+currentVersionLabel.textContent = '2.0.0';
+updateStatusText.textContent = '';
+
+checkUpdateBtn.addEventListener('click', async () => {
+    updateStatusText.textContent = 'A verificar...';
+    updateStatusText.className = 'settings-update-status checking';
+    checkUpdateBtn.disabled = true;
+    checkUpdateBtn.textContent = 'A VERIFICAR...';
+
+    const result = await checkForUpdate();
+
+    if (result.available) {
+        updateStatusText.textContent = 'Nova versao disponivel: v' + result.latestVersion;
+        updateStatusText.className = 'settings-update-status available';
+        checkUpdateBtn.textContent = '⬇ BAIXAR v' + result.latestVersion;
+        checkUpdateBtn.onclick = () => {
+            window.open(result.downloadUrl || result.releaseUrl, '_blank');
+        };
+    } else if (result.error) {
+        updateStatusText.textContent = 'Nao foi possivel verificar';
+        updateStatusText.className = 'settings-update-status error';
+        checkUpdateBtn.textContent = 'VERIFICAR ACTUALIZACOES';
+    } else {
+        updateStatusText.textContent = 'Já tens a versao mais recente!';
+        updateStatusText.className = 'settings-update-status latest';
+        checkUpdateBtn.textContent = 'VERIFICAR ACTUALIZACOES';
+    }
+    checkUpdateBtn.disabled = false;
 });
 
 musicSlider.addEventListener('input', () => {

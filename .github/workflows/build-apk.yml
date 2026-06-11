@@ -30,6 +30,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare www directory
+        run: |
+          mkdir -p www
+          cp index.html www/
+          cp -r src www/
+
       - name: Install Capacitor CLI
         run: npm install -g @capacitor/cli@6
 

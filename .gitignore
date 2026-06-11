@@ -21,6 +21,7 @@ Thumbs.db
 android/app/build/
 capacitor-cordova-android-plugins/
 dist/
+www/
 
 # Capacitor generated
 android/.gradle/
