@@ -1,0 +1,28 @@
+# Environment variables
+.env
+.env.local
+
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Build
+android/app/build/
+capacitor-cordova-android-plugins/
+dist/
+
+# Capacitor generated
+android/.gradle/
+android/local.properties
+android/captures/
